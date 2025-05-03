@@ -46,6 +46,34 @@ app.get("/users", async (req, res) => {
   }
 });
 
+app.delete("/user", async (req, res) => {
+  const userId = req.body.userId;
+  try {
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      res.status(404).send("User not found");
+    }
+    res.status(200).send("User deleted successfully");
+  } catch (error) {
+    res.status(400).send("Something went wrong" + error.message);
+  }
+});
+
+app.patch("/user", async (req, res) => {
+  const userData = req.body;
+  const userId = userData.userId;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).send("User not found");
+    }
+    const updatedUserData = await User.findByIdAndUpdate(userId, userData, { returnDocument: "after" });
+    return res.status(200).send(updatedUserData);
+  } catch (error) {
+    res.status(400).send("Something went wrong" + error.message);
+  }
+});
+
 databaseConnection()
   .then(() => {
     console.log("Database connection successful");
