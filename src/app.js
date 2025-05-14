@@ -10,14 +10,17 @@ app.use(express.json());
 app.post("/signup", async (req, res) => {
   const userObj = req.body;
 
-  // create a new instance of the User model
-  const user = new User(userObj);
-
   try {
+    const existingUser = await User.findOne({ emailId: userObj.emailId });
+    if (existingUser) {
+      return res.status(400).send("User already exists with this email id");
+    }
+    // create a new instance of the User model
+    const user = new User(userObj);
     await user.save();
     res.status(201).send("User created successfully");
   } catch (error) {
-    res.status(500).send("Error saving user to the database" + error.message);
+    res.status(500).send("Error saving user to the database " + error.message);
   }
 });
 
@@ -30,7 +33,7 @@ app.get("/user", async (req, res) => {
     }
     res.status(200).send(user);
   } catch (error) {
-    res.status(400).send("Something went wrong" + error.message);
+    res.status(400).send("Something went wrong " + error.message);
   }
 });
 
@@ -42,7 +45,7 @@ app.get("/users", async (req, res) => {
     }
     res.status(200).send(users);
   } catch (error) {
-    res.status(400).send("Something went wrong" + error.message);
+    res.status(400).send("Something went wrong " + error.message);
   }
 });
 
@@ -55,22 +58,31 @@ app.delete("/user", async (req, res) => {
     }
     res.status(200).send("User deleted successfully");
   } catch (error) {
-    res.status(400).send("Something went wrong" + error.message);
+    res.status(400).send("Something went wrong " + error.message);
   }
 });
 
-app.patch("/user", async (req, res) => {
+app.patch("/user/:userId", async (req, res) => {
   const userData = req.body;
-  const userId = userData.userId;
+  const userId = req.params.userId;
+  const ALLOWED_UPDATES = ["firstName", "lastName", "age", "gender", "password", "photoUrl", "about", "skills"];
+  const IS_ALLOWED_UPDATE = Object.keys(userData).every((key) => ALLOWED_UPDATES.includes(key));
+
   try {
+    if (!IS_ALLOWED_UPDATE) {
+      throw new Error("Update not allowed");
+    }
     const user = await User.findById(userId);
     if (!user) {
       res.status(404).send("User not found");
     }
-    const updatedUserData = await User.findByIdAndUpdate(userId, userData, { returnDocument: "after" });
+    const updatedUserData = await User.findByIdAndUpdate(userId, userData, {
+      returnDocument: "after",
+      runValidators: true,
+    });
     return res.status(200).send(updatedUserData);
   } catch (error) {
-    res.status(400).send("Something went wrong" + error.message);
+    res.status(400).send("Something went wrong " + error.message);
   }
 });
 
@@ -82,5 +94,5 @@ databaseConnection()
     });
   })
   .catch((error) => {
-    console.log("Database connection failed", error);
+    console.log("Database connection failed ", error);
   });
