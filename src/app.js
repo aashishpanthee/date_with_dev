@@ -1,26 +1,51 @@
 const express = require("express");
 const databaseConnection = require("./config/database");
 const { User } = require("./models/user");
+const { validateSignUpData } = require("./utils/validation");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
 // parse the body of the request from json to javascript object (middleware)
 app.use(express.json());
 
-app.post("/signup", async (req, res) => {
-  const userObj = req.body;
+const saltRounds = 10;
 
+app.post("/signup", async (req, res) => {
   try {
+    const userObj = req.body;
+    validateSignUpData(userObj);
+    const { firstName, lastName, emailId, password, age, gender } = userObj;
+
     const existingUser = await User.findOne({ emailId: userObj.emailId });
     if (existingUser) {
       return res.status(400).send("User already exists with this email id");
     }
     // create a new instance of the User model
-    const user = new User(userObj);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const user = new User({ firstName, lastName, emailId, password: hashedPassword, age, gender });
     await user.save();
     res.status(201).send("User created successfully");
   } catch (error) {
-    res.status(500).send("Error saving user to the database " + error.message);
+    res.status(500).send("ERROR: " + error.message);
+  }
+});
+
+
+app.post("/login", async (req, res) => {
+  try {
+    const userObj = req.body;
+    const { emailId, password } = userObj;
+    const user = await User.findOne({ emailId });
+    if (!user) {
+      return res.status(400).send("Invalid credentials");
+    }
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).send("Invalid credentials");
+    }
+  } catch (error) {
+    res.status(500).send("ERROR: " + error.message);
   }
 });
 
@@ -90,7 +115,7 @@ databaseConnection()
   .then(() => {
     console.log("Database connection successful");
     app.listen(4000, () => {
-      console.log("Server is running on port 3000");
+      console.log("Server is running on port 4000");
     });
   })
   .catch((error) => {
