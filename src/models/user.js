@@ -43,6 +43,7 @@ const userSchema = new Schema(
     age: {
       type: Number,
       min: [18, "User must be at least 18 years old"],
+      required: [true, "Age is required"],
     },
     gender: {
       type: String,
@@ -65,6 +66,7 @@ const userSchema = new Schema(
     about: {
       type: String,
       default: "No information provided",
+      maxLength: [500, "About cannot have more than 500 characters"],
     },
     skills: {
       type: [String],
