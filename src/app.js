@@ -48,12 +48,13 @@ app.post("/login", async (req, res) => {
       return res.status(400).send("Invalid credentials");
     }
 
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    const isPasswordCorrect = await user.verifyPassword(password);
     if (!isPasswordCorrect) {
       return res.status(400).send("Invalid credentials");
     }
+
     // Generate a jwt token
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = await user.getJWT();
 
     // Set the token in the cookie
     res.cookie("token", token, {

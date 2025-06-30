@@ -1,5 +1,11 @@
 const validator = require("validator");
 
+/**
+ * The function `validateSignUpData` validates the sign-up data provided by a user to ensure all
+ * required fields meet specific criteria.
+ * @param userObj - The `validateSignUpData` function takes a `userObj` parameter which should be an
+ * object containing the following properties:
+ */
 const validateSignUpData = (userObj) => {
   const { firstName, lastName, emailId, password, age, gender, skills, about } = userObj;
   const genderValue = gender.toLowerCase();
