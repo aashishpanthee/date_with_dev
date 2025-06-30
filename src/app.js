@@ -1,11 +1,10 @@
 const express = require("express");
 const databaseConnection = require("./config/database");
-const { User } = require("./models/user");
-const { validateSignUpData } = require("./utils/validation");
-const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
-const { userAuth } = require("./middlewares/auth")
+
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/request");
 
 const app = express();
 
@@ -15,130 +14,15 @@ app.use(express.json());
 // parse the cookies from the request
 app.use(cookieParser());
 
-const saltRounds = 10;
+/* The code `app.use("/auth", authRouter); app.use("/profile", profileRouter); app.use("/requests",
+requestRouter);` is setting up middleware in the Express application. */
+app.use("/auth", authRouter);
+app.use("/profile", profileRouter);
+app.use("/request", requestRouter);
 
-app.post("/signup", async (req, res) => {
-  try {
-    const userObj = req.body;
-    validateSignUpData(userObj);
-    const { firstName, lastName, emailId, password, age, gender } = userObj;
-
-    const existingUser = await User.findOne({ emailId: userObj.emailId });
-    if (existingUser) {
-      return res.status(400).send("User already exists with this email id");
-    }
-    // create a new instance of the User model
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const user = new User({ firstName, lastName, emailId, password: hashedPassword, age, gender });
-    await user.save();
-    res.status(201).send("User created successfully");
-  } catch (error) {
-    res.status(500).send("ERROR: " + error.message);
-  }
-});
-
-
-app.post("/login", async (req, res) => {
-  try {
-    const userObj = req.body;
-    const { emailId, password } = userObj;
-    const user = await User.findOne({ emailId });
-
-    if (!user) {
-      return res.status(400).send("Invalid credentials");
-    }
-
-    const isPasswordCorrect = await user.verifyPassword(password);
-    if (!isPasswordCorrect) {
-      return res.status(400).send("Invalid credentials");
-    }
-
-    // Generate a jwt token
-    const token = await user.getJWT();
-
-    // Set the token in the cookie
-    res.cookie("token", token, {
-      httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-      expires: new Date(Date.now() + 3600000), // 1 hour
-    });
-    return res.status(200).send("Logged in successfully");
-  } catch (error) {
-    res.status(500).send("ERROR: " + error.message);
-  }
-});
-
-app.get("/profile", userAuth, async (req, res) => {
-  try {
-    const { user } = req;
-    res.status(200).send(user);
-  } catch (error) {
-    res.status(500).send("ERROR. " + error.message);
-  }
-})
-
-
-app.get("/user", async (req, res) => {
-  const userEmail = req.body.emailId;
-  try {
-    const user = await User.findOne({ emailId: userEmail });
-    if (!user) {
-      res.status(404).send("User not found");
-    }
-    res.status(200).send(user);
-  } catch (error) {
-    res.status(400).send("Something went wrong " + error.message);
-  }
-});
-
-app.get("/users", async (req, res) => {
-  try {
-    const users = await User.find({});
-    if (!users) {
-      res.status(404).send("No users found");
-    }
-    res.status(200).send(users);
-  } catch (error) {
-    res.status(400).send("Something went wrong " + error.message);
-  }
-});
-
-app.delete("/user", async (req, res) => {
-  const userId = req.body.userId;
-  try {
-    const user = await User.findByIdAndDelete(userId);
-    if (!user) {
-      res.status(404).send("User not found");
-    }
-    res.status(200).send("User deleted successfully");
-  } catch (error) {
-    res.status(400).send("Something went wrong " + error.message);
-  }
-});
-
-app.patch("/user/:userId", async (req, res) => {
-  const userData = req.body;
-  const userId = req.params.userId;
-  const ALLOWED_UPDATES = ["firstName", "lastName", "age", "gender", "password", "photoUrl", "about", "skills"];
-  const IS_ALLOWED_UPDATE = Object.keys(userData).every((key) => ALLOWED_UPDATES.includes(key));
-
-  try {
-    if (!IS_ALLOWED_UPDATE) {
-      throw new Error("Update not allowed");
-    }
-    const user = await User.findById(userId);
-    if (!user) {
-      res.status(404).send("User not found");
-    }
-    const updatedUserData = await User.findByIdAndUpdate(userId, userData, {
-      returnDocument: "after",
-      runValidators: true,
-    });
-    return res.status(200).send(updatedUserData);
-  } catch (error) {
-    res.status(400).send("Something went wrong " + error.message);
-  }
-});
-
+/* This code snippet is establishing a connection to the database using the `databaseConnection`
+function. It then uses a Promise chain with `.then()` and `.catch()` to handle the success and
+failure scenarios of the database connection. */
 databaseConnection()
   .then(() => {
     console.log("Database connection successful");
