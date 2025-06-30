@@ -3,11 +3,17 @@ const databaseConnection = require("./config/database");
 const { User } = require("./models/user");
 const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth")
 
 const app = express();
 
 // parse the body of the request from json to javascript object (middleware)
 app.use(express.json());
+
+// parse the cookies from the request
+app.use(cookieParser());
 
 const saltRounds = 10;
 
@@ -37,17 +43,38 @@ app.post("/login", async (req, res) => {
     const userObj = req.body;
     const { emailId, password } = userObj;
     const user = await User.findOne({ emailId });
+
     if (!user) {
       return res.status(400).send("Invalid credentials");
     }
+
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
       return res.status(400).send("Invalid credentials");
     }
+    // Generate a jwt token
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Set the token in the cookie
+    res.cookie("token", token, {
+      httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
+      expires: new Date(Date.now() + 3600000), // 1 hour
+    });
+    return res.status(200).send("Logged in successfully");
   } catch (error) {
     res.status(500).send("ERROR: " + error.message);
   }
 });
+
+app.get("/profile", userAuth, async (req, res) => {
+  try {
+    const { user } = req;
+    res.status(200).send(user);
+  } catch (error) {
+    res.status(500).send("ERROR. " + error.message);
+  }
+})
+
 
 app.get("/user", async (req, res) => {
   const userEmail = req.body.emailId;
