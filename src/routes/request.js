@@ -9,8 +9,6 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
     const fromUserId = req.user._id;
     const toUserId = req.params.toUserId;
     const status = req.params.status;
-    console.log(typeof fromUserId)
-    console.log(typeof toUserId)
 
     const ALLOWED_STATUSES = ["ignore", "interested"];
 
@@ -59,6 +57,48 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
       message: "Failed to send connection request",
       error: error.message,
     });
+  }
+})
+
+requestRouter.post("/review/:status/:requestId", userAuth, async (req, res) => {
+  try {
+    const { status, requestId } = req.params;
+    const loggedInUserId = req.user._id;
+
+    const ALLOWED_STATUSES = ["accepted", "rejected"];
+
+    if (!ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid status",
+      });
+    }
+
+    const connectionRequest = await ConnectionRequest.findOne({
+      _id: requestId,
+      toUserId: loggedInUserId,
+      status: "interested"
+    })
+
+    if (!connectionRequest) {
+      return res.status(400).json({
+        message: "Connection request not found",
+      });
+    }
+
+    connectionRequest.status = status;
+    const updatedConnectionRequest = await connectionRequest.save();
+
+    res.status(200).json({
+      message: "Connection request reviewed successfully",
+      data: updatedConnectionRequest,
+    });
+
+  } catch (error) {
+    res.status(400).json({
+      message: "Failed to review connection request",
+      error: error.message,
+    });
+
   }
 })
 
