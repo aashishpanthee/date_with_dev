@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
+const userRouter = require('./routes/user');
 
 const app = express();
 
@@ -15,10 +16,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 /* The code `app.use("/auth", authRouter); app.use("/profile", profileRouter); app.use("/requests",
-requestRouter);` is setting up middleware in the Express application. */
+requestRouter); etc` is setting up middleware in the Express application. */
 app.use("/auth", authRouter);
 app.use("/profile", profileRouter);
 app.use("/request", requestRouter);
+app.use("/user", userRouter);
 
 /* This code snippet is establishing a connection to the database using the `databaseConnection`
 function. It then uses a Promise chain with `.then()` and `.catch()` to handle the success and
