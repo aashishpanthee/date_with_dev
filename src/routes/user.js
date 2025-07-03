@@ -1,6 +1,7 @@
 const express = require("express");
 const { userAuth } = require("../middlewares/auth");
-const { ConnectionRequest } = require("../models/connectionRequest")
+const { ConnectionRequest } = require("../models/connectionRequest");
+const { User } = require('../models/user');
 
 const userRouter = express.Router();
 
@@ -41,6 +42,47 @@ userRouter.get("/connections", userAuth, async (req, res) => {
       message: "Data fetched Successfully",
       data: user
     });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+})
+
+
+// get all the users in the feed (excluding logged-in user and users with pending connection requests)
+userRouter.get("/feed", userAuth, async (req, res) => {
+  try {
+    const loggedInUserId = req.user._id;
+
+    // find all connection requests (sent + received)
+    const connectionRequests = await ConnectionRequest.find({
+      $or: [
+        { fromUserId: loggedInUserId },
+        { toUserId: loggedInUserId }
+      ]
+    }).select("fromUserId toUserId").populate("fromUserId", ALLOWED_USER_DATA).populate("toUserId", ALLOWED_USER_DATA);
+
+    const hideUsersFromFeed = new Set();
+    connectionRequests.forEach((request) => {
+      if (request.fromUserId._id.equals(loggedInUserId)) {
+        hideUsersFromFeed.add(request.toUserId._id.toString());
+      } else {
+        hideUsersFromFeed.add(request.fromUserId._id.toString());
+      }
+    });
+
+    const users = await User.find({
+      $and: [
+        { _id: { $ne: loggedInUserId } },
+        { _id: { $nin: Array.from(hideUsersFromFeed) } }
+      ]
+    }).select(ALLOWED_USER_DATA);
+
+
+    return res.status(200).json({
+      message: "Data fetched Successfully",
+      data: users
+    });
+
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
