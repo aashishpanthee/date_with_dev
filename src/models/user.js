@@ -41,7 +41,7 @@ const userSchema = new Schema(
     age: {
       type: Number,
       min: [18, "User must be at least 18 years old"],
-      required: [true, "Age is required"],
+      // required: [true, "Age is required"],
     },
     gender: {
       type: String,
@@ -50,7 +50,7 @@ const userSchema = new Schema(
         message: "Invalid gender",
       },
       lowercase: true,
-      required: [true, "Gender is required"],
+      // required: [true, "Gender is required"],
     },
     photoUrl: {
       type: String,
