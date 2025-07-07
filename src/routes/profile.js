@@ -14,7 +14,7 @@ profileRouter.get("/view", userAuth, async (req, res) => {
       data: user
     });
   } catch (error) {
-    res.status(500).send("ERROR. " + error.message);
+    res.status(500).json({ message: "ERROR. " + error.message });
   }
 })
 
@@ -22,7 +22,7 @@ profileRouter.patch("/edit", userAuth, async (req, res) => {
   try {
     const isValidFields = validateEditProfileData(req.body);
     if (!isValidFields) {
-      return res.status(400).send("Update not allowed. Please check the fields you are trying to update.");
+      return res.status(400).json({ message: "Update not allowed. Please check the fields you are trying to update." });
     }
     const loggedInUser = req.user;
     Object.keys(req.body).forEach((key) => {
@@ -34,7 +34,7 @@ profileRouter.patch("/edit", userAuth, async (req, res) => {
       data: loggedInUser
     });
   } catch (error) {
-    res.status(500).send("ERROR. " + error.message);
+    res.status(500).json({ message: "ERROR. " + error.message });
   }
 })
 
@@ -52,7 +52,7 @@ profileRouter.patch("/password", userAuth, async (req, res) => {
       data: loggedInUser
     });
   } catch (error) {
-    return res.status(500).send("ERROR. " + error.message);
+    return res.status(500).json({ message: "ERROR. " + error.message });
   }
 })
 

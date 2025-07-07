@@ -25,7 +25,7 @@ const userAuth = async (req, res, next) => {
     const cookie = req.cookies;
     const { token } = cookie;
     if (!token) {
-      return res.status(401).send("Unauthorized: Invalid or expired token");
+      return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
     }
     // verify the token
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
@@ -34,7 +34,7 @@ const userAuth = async (req, res, next) => {
     const { _id } = decodedToken;
     const user = await User.findById(_id);
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).json({ message: "User not found" });
     }
     // attach the user to the request object
     req.user = user;
@@ -43,7 +43,7 @@ const userAuth = async (req, res, next) => {
     next();
 
   } catch (error) {
-    return res.status(500).send("Internal Server Error: " + error.message);
+    return res.status(500).json({ message: "Internal Server Error: " + error.message });
   }
 
 };
